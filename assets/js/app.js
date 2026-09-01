@@ -538,7 +538,7 @@
           .filter(Boolean).join(' · ');
 
     document.title = (S.playing ? marquee.replace(/\s+/g, ' ').trim() + ' — ' : '') +
-      'Omarchy Radio' + (S.playing ? '' : ' — Free Online Music Streams, Always On');
+      'Omarchy Radio';
 
     el.playlistName.textContent = cur.name.toLowerCase();
     el.geoName.textContent = cur.name.toLowerCase();
