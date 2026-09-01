@@ -1,0 +1,816 @@
+/* Omarchy Radio — design implementation.
+   Theme colours are computed in app.js and written to these custom properties,
+   mirroring the mix()/lum() derivations from the source design. */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+:root {
+  --bg: #0a0b0a;
+  --fg: #e7e6e0;
+  --ac: #5ef2a0;
+  --bd: #23261f;
+  --bdF: #14170f;
+  --c2: #797b74;
+  --c3: #4a4c46;
+  --rowOn: #101711;
+  --rowHov: #101110;
+  --trk: #1e201d;
+  --lcd: #050505;
+  --acFg: #000000;
+  --acHi: #8bf5b8;
+  --g1: #365f45;
+  --g2: #26402f;
+  --scan: repeating-linear-gradient(180deg, rgba(0,0,0,.42) 0 2px, transparent 2px 4px);
+
+  --wt-small: 500;
+
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --sans: "Space Grotesk", Helvetica, Arial, sans-serif;
+  --lcdfont: "VT323", ui-monospace, monospace;
+}
+
+html, body { margin: 0; padding: 0; background: var(--bg); }
+
+body {
+  font-family: var(--mono);
+  color: var(--fg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, p, ul, ol, li, figure { margin: 0; padding: 0; }
+ul, ol { list-style: none; }
+
+a { color: var(--ac); text-decoration: none; }
+a:hover { color: var(--fg); }
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--lcd); }
+::-webkit-scrollbar-thumb { background: var(--bd); }
+* { scrollbar-width: thin; scrollbar-color: var(--bd) var(--lcd); }
+
+:focus-visible { outline: 2px solid var(--ac); outline-offset: 1px; }
+
+@keyframes marq { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+@keyframes blink { 0%, 55% { opacity: 1; } 56%, 100% { opacity: .12; } }
+
+/* ── stage ───────────────────────────────────────────── */
+
+.stage {
+  height: 100vh;
+  height: 100dvh;
+  background: var(--bg);
+  color: var(--fg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+}
+
+.fit {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  width: calc(1180px * var(--fit, 1));
+  height: calc(880px * var(--fit, 1));
+}
+
+.app {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  width: 1180px;
+  height: 880px;
+  overflow: hidden;
+  background: var(--bg);
+  border: 1px solid var(--bd);
+  display: flex;
+  flex-direction: column;
+  transform: scale(var(--fit, 1));
+  transform-origin: top left;
+}
+
+/* ── header ──────────────────────────────────────────── */
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--bd);
+  flex: none;
+}
+
+.bar-l { display: flex; align-items: center; gap: 12px; }
+
+.dot { width: 9px; height: 9px; flex: none; background: var(--ac); }
+
+.wordmark {
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: .34em;
+  text-transform: uppercase;
+  color: var(--fg);
+}
+
+.home {
+  font-size: 10px;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  color: var(--c2);
+  border-bottom: 1px solid var(--bd);
+}
+.home:hover { color: var(--ac); border-color: var(--ac); }
+
+.bar-r { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
+
+.live-now {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  color: var(--ac);
+}
+
+.pulse {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  background: var(--ac);
+  animation: blink 1.4s steps(1) infinite;
+}
+
+.net-sum {
+  font-size: 10px;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  color: var(--c2);
+  white-space: nowrap;
+}
+
+/* theme picker */
+
+.picker { position: relative; }
+
+.picker-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 11px;
+  font-size: 10px;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  border: 1px solid var(--bd);
+  color: var(--fg);
+  min-width: 168px;
+  justify-content: space-between;
+}
+.picker-btn:hover { border-color: var(--ac); }
+
+.picker-name { display: flex; align-items: center; gap: 9px; }
+.sw-ac { width: 8px; height: 8px; flex: none; background: var(--ac); }
+.caret { color: var(--c2); }
+
+.menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 3px;
+  z-index: 20;
+  width: 240px;
+  max-height: 340px;
+  overflow-y: auto;
+  background: var(--bg);
+  border: 1px solid var(--bd);
+}
+.menu[hidden] { display: none; }
+
+.menu button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 12px;
+  font-size: 10px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--fg);
+  border-bottom: 1px solid var(--bdF);
+}
+.menu button:hover { background: var(--rowHov); }
+.menu li.is-on button { background: var(--rowOn); color: var(--ac); }
+
+.sw { display: flex; flex: none; gap: 2px; }
+.sw span { width: 9px; height: 14px; }
+.menu-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── upper row ───────────────────────────────────────── */
+
+.row-top {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  flex: none;
+  min-height: 0;
+}
+
+/* The station list is lifted out of flow so it contributes no height to the
+   grid row; the deck beside it defines the row, and the list scrolls inside. */
+.stations {
+  position: relative;
+  overflow: hidden;
+  border-right: 1px solid var(--bd);
+  border-bottom: 1px solid var(--bd);
+  min-height: 0;
+}
+
+.stations-inner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 20px 10px;
+  flex: none;
+}
+
+.panel-title {
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: .28em;
+  text-transform: uppercase;
+  color: var(--c2);
+}
+
+.panel-meta {
+  font-size: 10px;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--g1);
+}
+
+.station-list {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.station {
+  display: grid;
+  grid-template-columns: 3px minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  width: 100%;
+  padding: 13px 20px;
+  border-top: 1px solid var(--bdF);
+}
+.station:hover { background: var(--rowHov); }
+.station.is-on { background: var(--rowOn); }
+
+.mark { width: 3px; height: 24px; background: var(--bd); }
+.station.is-on .mark { background: var(--ac); }
+
+.st-txt { min-width: 0; }
+
+.st-name {
+  display: block;
+  font-family: var(--sans);
+  font-size: 14px;
+  color: var(--fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.station.is-on .st-name { color: var(--ac); }
+
+.st-tag {
+  display: block;
+  font-size: 9px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--c2);
+  margin-top: 4px;
+}
+
+.st-num { text-align: right; }
+
+.st-live {
+  display: block;
+  font-family: var(--lcdfont);
+  font-size: 19px;
+  line-height: 1;
+  color: var(--c2);
+}
+.station.is-on .st-live { color: var(--ac); }
+
+.st-lbl {
+  display: block;
+  font-size: 8px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--c3);
+  margin-top: 3px;
+}
+
+.deck { border-bottom: 1px solid var(--bd); min-width: 0; }
+
+/* ── LCD ─────────────────────────────────────────────── */
+
+.lcd {
+  position: relative;
+  background: var(--lcd);
+  border-bottom: 1px solid var(--bd);
+  padding: 22px 24px 0;
+  overflow: hidden;
+}
+
+.scan { position: absolute; inset: 0; pointer-events: none; background: var(--scan); }
+
+.lcd-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 10px;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  color: var(--g1);
+}
+
+.marq-clip {
+  overflow: hidden;
+  min-width: 0;
+  white-space: nowrap;
+  margin: 10px 0 2px;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 3%, #000 97%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 3%, #000 97%, transparent);
+}
+
+.marq {
+  display: inline-flex;
+  gap: 80px;
+  animation: marq 20s linear infinite;
+  will-change: transform;
+}
+
+.marq-txt {
+  font-family: var(--lcdfont);
+  font-size: 62px;
+  line-height: 1;
+  color: var(--ac);
+}
+
+.lcd-bot {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.artist {
+  font-size: 11px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--g1);
+}
+
+.clock {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  flex: none;
+  white-space: nowrap;
+  font-family: var(--lcdfont);
+  color: var(--ac);
+}
+.cur { font-size: 30px; line-height: 1; }
+.dur { font-size: 17px; color: var(--g2); }
+
+.vis {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 84px;
+  margin-top: 16px;
+}
+.vis span {
+  flex: 1;
+  height: 5%;
+  background: var(--ac);
+  min-height: 2px;
+}
+
+/* ── transport ───────────────────────────────────────── */
+
+.transport {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 14px 24px;
+}
+
+.tbtns { display: flex; }
+
+.tb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 36px;
+  color: var(--fg);
+  font-size: 11px;
+  border: 1px solid var(--bd);
+  margin-left: -1px;
+}
+.tb:first-child { margin-left: 0; }
+.tb:hover { border-color: var(--ac); color: var(--ac); z-index: 1; }
+
+.tb-play {
+  width: 74px;
+  font-size: 13px;
+  color: var(--acFg);
+  background: var(--ac);
+  border-color: var(--ac);
+}
+.tb-play:hover { background: var(--acHi); border-color: var(--acHi); color: var(--acFg); }
+
+.seek {
+  flex: 1;
+  min-width: 160px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  border: 1px solid var(--bd);
+  padding: 0 8px;
+}
+
+.seek-track { position: relative; width: 100%; height: 4px; background: var(--trk); }
+.seek-fill { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--ac); }
+.seek-head {
+  position: absolute;
+  top: -6px;
+  left: 0;
+  width: 3px;
+  height: 16px;
+  margin-left: -1px;
+  background: var(--fg);
+}
+
+.knobs { display: flex; gap: 16px; }
+.knob-wrap { display: flex; align-items: center; gap: 9px; }
+
+.knob-lbl {
+  font-size: 9px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--c2);
+}
+
+.knob {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  cursor: ns-resize;
+  border: 1px solid var(--bd);
+  touch-action: none;
+}
+.knob:hover { border-color: var(--ac); }
+#balKnob { cursor: ew-resize; }
+
+.knob-rot { position: absolute; inset: 0; }
+
+.knob-tick {
+  position: absolute;
+  left: 50%;
+  top: 3px;
+  width: 2px;
+  height: 12px;
+  margin-left: -1px;
+  background: var(--ac);
+}
+.knob-tick-fg { background: var(--fg); }
+
+.knob-val {
+  font-family: var(--lcdfont);
+  font-size: 18px;
+  line-height: 1;
+  color: var(--ac);
+  width: 26px;
+}
+.knob-val-fg { color: var(--fg); }
+
+/* ── stat tiles ──────────────────────────────────────── */
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-top: 1px solid var(--bd);
+}
+
+.tile { padding: 14px 20px; border-left: 1px solid var(--bdF); }
+.tile:first-child { border-left: 0; }
+
+.tile-v {
+  font-family: var(--lcdfont);
+  font-size: 34px;
+  line-height: 1;
+  color: var(--ac);
+}
+
+.tile-l {
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--c2);
+  margin-top: 7px;
+}
+
+/* ── lower row ───────────────────────────────────────── */
+
+.row-bot {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  flex: 1;
+  min-height: 0;
+}
+
+.playlist {
+  border-right: 1px solid var(--bd);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.playlist .panel-head { padding: 16px 20px 10px; }
+
+.back {
+  font-size: 10px;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--ac);
+  white-space: nowrap;
+}
+.back:hover { color: var(--fg); }
+
+.tr-head, .track {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 84px;
+  gap: 12px;
+}
+
+.tr-head {
+  padding: 8px 20px;
+  border-top: 1px solid var(--bd);
+  border-bottom: 1px solid var(--bd);
+  font-size: 9px;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: var(--c2);
+}
+.ta-r { text-align: right; }
+
+.tracks {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.track {
+  align-items: center;
+  width: 100%;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--bdF);
+}
+.track:hover { background: var(--rowHov); }
+.track.is-on { background: var(--rowOn); }
+
+.tr-n { font-family: var(--lcdfont); font-size: 19px; line-height: 1; color: var(--c2); }
+.track.is-on .tr-n { color: var(--ac); }
+
+.tr-t { min-width: 0; }
+
+.tr-title {
+  display: block;
+  font-family: var(--sans);
+  font-size: 14px;
+  color: var(--fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.track.is-on .tr-title { color: var(--ac); }
+
+.tr-artist {
+  display: block;
+  font-size: 10px;
+  letter-spacing: .1em;
+  color: var(--c2);
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tr-s {
+  text-align: right;
+  font-size: 9px;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--ac);
+}
+
+.panel-note {
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--bd);
+  font-size: 9px;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--c3);
+}
+
+.geo { display: flex; flex-direction: column; min-height: 0; }
+
+.geo-title { padding: 16px 20px 10px; flex: none; }
+
+.geo-list {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  border-top: 1px solid var(--bd);
+}
+
+.geo-row { padding: 11px 20px; border-bottom: 1px solid var(--bdF); }
+
+.geo-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.geo-name {
+  font-size: 11px;
+  letter-spacing: .06em;
+  color: var(--fg);
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.geo-val { font-family: var(--lcdfont); font-size: 17px; line-height: 1; color: var(--ac); }
+
+.geo-bar { height: 3px; margin-top: 8px; background: var(--trk); }
+.geo-bar span { display: block; height: 3px; background: var(--ac); }
+
+/* ── footer ──────────────────────────────────────────── */
+
+.foot {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: none;
+  padding: 14px 20px;
+  border-top: 1px solid var(--bd);
+  font-size: 9px;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: var(--c2);
+}
+
+.status { display: flex; align-items: center; gap: 8px; color: var(--ac); }
+.status .pulse { width: 6px; height: 6px; animation-duration: 1.1s; }
+.foot-skin { margin-left: auto; color: var(--fg); }
+
+/* ── noscript ────────────────────────────────────────── */
+
+.noscript {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  overflow-y: auto;
+  padding: 48px 24px;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 13px;
+  line-height: 1.7;
+}
+.noscript h2 { font-size: 15px; letter-spacing: .1em; text-transform: uppercase; color: var(--ac); margin-bottom: 16px; }
+.noscript ul { margin: 16px 0; }
+.noscript li { margin-bottom: 8px; }
+.noscript code { color: var(--ac); word-break: break-all; }
+.noscript p { max-width: 62ch; }
+
+/* The small uppercase labels run 8-11px with wide tracking in dimmed colours;
+   a heavier weight keeps them legible. JetBrains Mono ships 400/500/700 here,
+   so 500 is a real weight rather than a synthesised one. */
+.wordmark, .home, .live-now, .net-sum, .picker-btn, .menu button,
+.panel-title, .panel-meta, .st-tag, .st-lbl, .lcd-top, .artist,
+.tile-l, .tr-head, .tr-s, .tr-artist, .knob-lbl, .back,
+.panel-note, .geo-name, .foot, .status, .foot-skin {
+  font-weight: var(--wt-small);
+}
+
+/* ── responsive ──────────────────────────────────────────
+   The design is a fixed 1180x880 canvas scaled to fit. Below that
+   width the scale factor would render 9px labels at ~3px, so the
+   layout reflows to a single fluid column instead. */
+
+@media (max-width: 900px) {
+  .stage { height: auto; min-height: 100dvh; display: block; overflow: visible; }
+  .bg { position: fixed; }
+  .fit { width: 100%; height: auto; }
+
+  .app {
+    width: 100%;
+    height: auto;
+    min-height: 100dvh;
+    transform: none;
+    border-left: 0;
+    border-right: 0;
+  }
+
+  .row-top, .row-bot { grid-template-columns: minmax(0, 1fr); }
+  .row-bot { flex: none; }
+
+  .stations { position: static; overflow: visible; border-right: 0; order: 2; }
+  .stations-inner { position: static; }
+  .station-list { max-height: 320px; }
+  .deck { order: 1; }
+  .playlist { border-right: 0; }
+  .tracks, .geo-list { max-height: 340px; }
+
+  .bar { gap: 14px; }
+  .bar-r { gap: 14px; width: 100%; }
+  .picker { margin-left: auto; }
+  .menu { right: auto; left: 0; width: min(240px, 100%); }
+
+  .lcd { padding: 18px 16px 0; }
+  .lcd-top { font-size: 9px; letter-spacing: .18em; }
+  .lcd-bot { align-items: baseline; gap: 12px; }
+  .artist { font-size: 9px; letter-spacing: .14em; }
+  .cur { font-size: 24px; }
+  .dur { font-size: 14px; }
+  .marq-txt { font-size: 44px; }
+  .vis { height: 60px; }
+  .transport { padding: 14px 16px; }
+  .seek { order: 3; width: 100%; flex-basis: 100%; }
+  .knobs { margin-left: auto; }
+
+  .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tile:nth-child(3) { border-left: 0; }
+  .tile:nth-child(n+3) { border-top: 1px solid var(--bdF); }
+}
+
+@media (max-width: 480px) {
+  .marq-txt { font-size: 34px; }
+  .wordmark { letter-spacing: .2em; }
+  .home { display: none; }
+  .net-sum { display: none; }
+  .picker-btn { min-width: 140px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marq { animation: none; }
+  .pulse { animation: none; }
+  * { transition: none !important; }
+}
